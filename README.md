@@ -62,6 +62,46 @@ daphne -b 0.0.0.0 -p 8000 qa_agent.asgi:application
 - Chat interface: http://localhost:8000
 - Admin panel: http://localhost:8000/admin
 
+## Docker Setup (Alternative)
+
+You can also run the application using Docker and Docker Compose:
+
+1. **Create `.env` file:**
+   ```bash
+   cat > .env << EOF
+   OPENAI_API_KEY=your_openai_api_key_here
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   EOF
+   ```
+   Replace the placeholder values with your actual API keys.
+
+2. **Build and run with Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
+   
+   This will:
+   - Build the Docker image
+   - Start the Django application
+   - Start a Redis container (for Channels)
+   - Run database migrations automatically
+
+3. **Access the application:**
+   - Chat interface: http://localhost:8000
+   - Admin panel: http://localhost:8000/admin
+
+4. **Stop the containers:**
+   ```bash
+   docker-compose down
+   ```
+
+5. **View logs:**
+   ```bash
+   docker-compose logs -f web
+   ```
+
+**Note:** The Docker setup includes Redis for Django Channels. If you want to use Redis in your local setup, update `CHANNEL_LAYERS` in `qa_agent/settings.py` to use Redis instead of InMemoryChannelLayer.
+
 ## Usage
 
 1. Open the chat interface in your browser

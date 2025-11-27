@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    container_name: qa_agent_web
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=qa_agent.settings
+      - DEBUG=True
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    command: sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 qa_agent.asgi:application"
+
+  redis:
+    image: redis:7-alpine
+    container_name: qa_agent_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  media_data:
+  redis_data:
