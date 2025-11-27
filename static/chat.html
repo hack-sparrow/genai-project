@@ -337,7 +337,7 @@
 
     <script>
         const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/'
+            'wss://genai-project-production.up.railway.app/ws/chat/'
         );
 
         const chatMessages = document.getElementById('chatMessages');
@@ -468,7 +468,7 @@
             uploadStatus.textContent = '⏳ Uploading and processing...';
             uploadStatus.className = 'upload-status';
             
-            fetch('/api/upload/', {
+            fetch('https://genai-project-production.up.railway.app/api/upload/', {
                 method: 'POST',
                 body: formData,
                 headers: {
