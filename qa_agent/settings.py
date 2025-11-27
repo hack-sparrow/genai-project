@@ -30,7 +30,7 @@ SECRET_KEY = "django-insecure-_wcupiewg+qu&y8cb7ggk1zfuz85+0afe%3qnt*rw)z3g8q^ym
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "*"]
 
 
 # Application definition
@@ -141,11 +141,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 ASGI_APPLICATION = "qa_agent.asgi.application"
 
 # Channel layers (using in-memory for development)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 # LangChain and API Keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
