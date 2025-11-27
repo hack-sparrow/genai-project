@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Agent - Document Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .upload-section input[type="file"] {
+            display: none;
+        }
+
+        .upload-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .upload-label:hover {
+            background: #5568d3;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .upload-status.success {
+            color: #28a745;
+        }
+
+        .upload-status.error {
+            color: #dc3545;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.bot {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            padding: 0 5px;
+        }
+
+        .sources {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .sources h4 {
+            margin-bottom: 8px;
+            color: #667eea;
+            font-size: 13px;
+        }
+
+        .source-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+
+        .source-item strong {
+            color: #333;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .chat-input button:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .chat-input button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .connection-status {
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message-bubble code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-bubble pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .message-bubble pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-bubble ul, .message-bubble ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message-bubble li {
+            margin: 5px 0;
+        }
+
+        .message-bubble h1, .message-bubble h2, .message-bubble h3 {
+            margin: 15px 0 10px 0;
+        }
+
+        .message-bubble p {
+            margin: 10px 0;
+        }
+
+        .message-bubble blockquote {
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .message-bubble table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .message-bubble table th,
+        .message-bubble table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .message-bubble table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Q&A Agent</h1>
+            <p>Ask questions about your uploaded documents</p>
+        </div>
+
+        <div class="connection-status" id="connectionStatus">
+            Connecting...
+        </div>
+
+        <div class="upload-section">
+            <label for="fileInput" class="upload-label">📄 Upload PDF Document</label>
+            <input type="file" id="fileInput" accept=".pdf">
+            <div class="upload-status" id="uploadStatus"></div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-bubble">
+                    👋 Hello! Upload a PDF document and ask me questions about it.
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type your question here..."
+                autocomplete="off"
+            >
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/'
+        );
+
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        let isConnected = false;
+
+        chatSocket.onopen = function(e) {
+            console.log('WebSocket connection established');
+            isConnected = true;
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.className = 'connection-status connected';
+        };
+
+        chatSocket.onclose = function(e) {
+            console.log('WebSocket connection closed');
+            isConnected = false;
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.className = 'connection-status disconnected';
+        };
+
+        chatSocket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            connectionStatus.textContent = 'Connection Error';
+            connectionStatus.className = 'connection-status disconnected';
+        };
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.type === 'connection') {
+                addMessage('bot', data.message);
+            } else if (data.type === 'response') {
+                addMessage('bot', data.answer, data.sources);
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            } else if (data.type === 'error') {
+                addMessage('bot', '❌ Error: ' + data.message);
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        };
+
+        function addMessage(sender, text, sources = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            
+            // Render markdown for bot messages, plain text for user messages
+            if (sender === 'bot' && typeof marked !== 'undefined') {
+                // Sanitize and render markdown
+                bubble.innerHTML = marked.parse(text);
+            } else {
+                // Plain text for user messages or if marked is not available
+                bubble.textContent = text;
+            }
+            
+            messageDiv.appendChild(bubble);
+            
+            if (sources && sources.length > 0) {
+                const sourcesDiv = document.createElement('div');
+                sourcesDiv.className = 'sources';
+                sourcesDiv.innerHTML = '<h4>📎 Sources:</h4>';
+                
+                sources.forEach((source, index) => {
+                    const sourceItem = document.createElement('div');
+                    sourceItem.className = 'source-item';
+                    const sourceName = source.metadata?.source || 'Document';
+                    const page = source.metadata?.page !== undefined ? ` (Page ${source.metadata.page + 1})` : '';
+                    sourceItem.innerHTML = `<strong>${sourceName}${page}:</strong> ${source.content}`;
+                    sourcesDiv.appendChild(sourceItem);
+                });
+                
+                messageDiv.appendChild(sourcesDiv);
+            }
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString();
+            messageDiv.appendChild(timeDiv);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !isConnected) return;
+            
+            addMessage('user', message);
+            messageInput.value = '';
+            
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<span class="loading"></span>';
+            
+            chatSocket.send(JSON.stringify({
+                type: 'message',
+                question: message,
+                document_ids: []  // Empty array means search all documents
+            }));
+        }
+
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                uploadStatus.textContent = '❌ Only PDF files are supported';
+                uploadStatus.className = 'upload-status error';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            uploadStatus.textContent = '⏳ Uploading and processing...';
+            uploadStatus.className = 'upload-status';
+            
+            fetch('/api/upload/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    uploadStatus.textContent = '✅ ' + data.message;
+                    uploadStatus.className = 'upload-status success';
+                    addMessage('bot', `📄 Document "${data.filename}" uploaded and processed successfully! You can now ask questions about it.`);
+                } else {
+                    let errorMsg = '❌ ' + (data.error || 'Upload failed');
+                    if (data.error_type === 'rate_limit') {
+                        errorMsg += '\n\n💡 ' + (data.suggestion || 'Please check your OpenAI account billing.');
+                    } else if (data.error_type === 'authentication') {
+                        errorMsg += '\n\n💡 ' + (data.suggestion || 'Please check your API key configuration.');
+                    }
+                    uploadStatus.textContent = errorMsg;
+                    uploadStatus.className = 'upload-status error';
+                    addMessage('bot', errorMsg);
+                }
+            })
+            .catch(error => {
+                uploadStatus.textContent = '❌ Error: ' + error.message;
+                uploadStatus.className = 'upload-status error';
+            })
+            .finally(() => {
+                fileInput.value = '';
+            });
+        });
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
+
